@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLineEdit, QLabe
 from PyQt5.QtChart import QChart, QChartView
 from PyQt5.QtGui import QBrush, QColor, QGuiApplication
 from PyQt5.QtCore import Qt
+import pyqtgraph as pg
 
 #Colors
 PRIMARY_COLOR = "#0F0F0F"
