@@ -302,7 +302,7 @@ margin-bottom:20px;</string>
           <string notr="true">background-color:rgba(0, 129, 112, 1);
 border-radius:19px;
 
-font: 32pt,&quot;&quot;;
+font: 28pt,&quot;&quot;;
 
 </string>
          </property>
@@ -323,7 +323,7 @@ font: 32pt,&quot;&quot;;
           <string notr="true">background-color:rgba(0, 129, 112, 1);
 border-radius:19px;
 
-font: 32pt,&quot;&quot;;</string>
+font: 28pt,&quot;&quot;;</string>
          </property>
          <property name="text">
           <string>Stop Recoding Data</string>
