@@ -19,3 +19,17 @@ El hardware principal del proyecto será el ESP32, un microcontrolador de bajo c
 ### 3. Comunicación Inalámbrica
 
 Se utilizará el módulo LoRa para establecer una comunicación inalámbrica de largo alcance entre el CanSat y la estación base. Esto permitirá la transmisión de datos telemétricos y comandos de control de manera eficiente y confiable.
+
+### For installing correctly and avoid problem as:
+```
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+
+Available platform plugins are: eglfs, linuxfb, minimal, minimalegl, offscreen, vnc, wayland-egl, wayland, wayland-xcomposite-egl, wayland-xcomposite-glx, webgl, xcb.
+
+Aborted (core dumped)
+```
+You can try install on your Ubuntu terminal:
+```
+sudo apt install libqt5gui5
+```
