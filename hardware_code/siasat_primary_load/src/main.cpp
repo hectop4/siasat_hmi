@@ -7,6 +7,9 @@
 #include <Adafruit_MPU6050.h>
 #include <TinyGPS++.h>
 #include <TinyGPSPlus.h>
+#include <HardwareSerial.h>
+#include <string.h>
+
 
 //----------------------Defining Constants for the ESP32----------------------
 #define SDA 21
@@ -31,7 +34,7 @@ TinyGPSPlus gps;
 
 
 
-
+String data = "Hello World";
 
 
 void setup() {
@@ -63,6 +66,7 @@ void setup() {
     Serial.println("Could not find a valid BMP280 sensor, check wiring!");
 
   }
+  Serial.println("BMP280 Initializing OK!");
 }
 void loop() {
   // Read the Serial2 from the GPS
@@ -81,6 +85,7 @@ void loop() {
   //If newData is true
   if(newData == true)
   {
+    
     newData = false;
     //Print mpu data
     sensors_event_t a, g, temp;
@@ -96,14 +101,37 @@ void loop() {
     Serial.print("Temperature: ");
     Serial.print(temp.temperature);
     Serial.println(" degC");
+  //Print bmp data
+    Serial.print(F("Temperature = "));
+    Serial.print(bmp.readTemperature());
+    Serial.println(" *C");
+
+    Serial.print(F("Pressure = "));
+    Serial.print(bmp.readPressure());
+    Serial.println(" Pa");
+
+    Serial.print(F("Approx altitude = "));
+    Serial.print(bmp.readAltitude( )); // this should be adjusted to your local forcase
+    Serial.println(" m");
+    //Print GPS data
 
     Serial.println(gps.satellites.value());
-    Serial.println(gps.location.lat(), 6);
-    Serial.println(gps.location.lng(), 6);
+    Serial.println(gps.location.lat(),6);
+    Serial.println(gps.location.lng(),6);
     Serial.println(gps.altitude.meters());
+    
+
+
+    data="Lat:"+String(gps.location.lat(),6)+", Lon:"+String(gps.location.lng(),6)+", Alt:"+String(gps.altitude.meters())+", Temp"+String(bmp.readTemperature())+" , Press"+String(bmp.readPressure())+", Alt:"+String(bmp.readAltitude())+", Ax:"+String(a.acceleration.x)+", Ay:"+String(a.acceleration.y)+", Az:"+String(a.acceleration.z)+", Gx:"+String(g.gyro.x)+", Gy:"+String(g.gyro.y)+", Gz:"+String(g.gyro.z)+", Temp:"+String(temp.temperature);
+
+    Serial.println(data);
+    LoRa.beginPacket();
+    LoRa.print(data);
+    LoRa.endPacket();
+    delay(1000);
+    Serial.println("Data Sent");
   }
   
 }
 
-
-// Path: hardware_code/siasat_primary_load/src/LoRa.cpp
+//----------------------End of the Code----------------------
