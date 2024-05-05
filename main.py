@@ -19,6 +19,7 @@ GRAPH_1 = "#00A8E8"
 GRAPH_2 = "#6528F7"
 GRAPH_3 = "#D7BBF5"
 GRAPH_4 = "#F9DBBB"
+csv_file = "data.csv"
 
 # Create the main application
 class App(QMainWindow):
@@ -248,10 +249,17 @@ class App(QMainWindow):
             self.close()
 #Convertimos datos del puerto seria a diccionario
 def split_data(date):
+    #%El formato de los datos es "AX:0.00,AY:0.00,AZ:0.00,GX:0.00,GY:0.00,GZ:0.00,T:0.00,P:0.00,A:0.00\r\n"
+    #*Se debe de agregar las opciones para GPS de carga primaria y secundaria.
+    
     splited= {}
     for data in date.split(","):
         try:
             splited[data.split(":")[0]]=data.split(":")[1]
+            file=open(csv_file,"a")
+            file.write(data)  
+            file.close()
+
         except IndexError:
             pass
     return splited

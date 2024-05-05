@@ -40,7 +40,7 @@ void setup() {
 void loop() {
   // Read the GPS data
    boolean newData = false;
-  for (unsigned long start = millis(); millis() - start < 1000;)
+  for (unsigned long start = millis(); millis() - start < 10;)
   {
     while (neogps.available())
     {
@@ -65,7 +65,7 @@ void loop() {
     LoRa.print(data);
     LoRa.endPacket();
     Serial.println("Packet Sent");
-    delay(1000);
+
 
   }
 
