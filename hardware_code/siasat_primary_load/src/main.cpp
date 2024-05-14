@@ -9,6 +9,7 @@
 #include <TinyGPSPlus.h>
 #include <HardwareSerial.h>
 #include <string.h>
+#include <ESP32Servo.h>
 
 
 //----------------------Defining Constants for the ESP32----------------------
@@ -21,6 +22,8 @@
 #define LORA_RST 14
 #define LORA_DI0 2
 #define LORA_BAND 433E6
+
+#define servoPin 4
 //----------------------Defining Constants for the Sensors----------------------
 
 Adafruit_BMP085 bmp;
@@ -32,7 +35,7 @@ HardwareSerial neogps(1);
 TinyGPSPlus gps;
 //----------------------Defining Constants for the LoRa----------------------
 
-
+Servo servo1;
 
 String data = "Hello World";
 
@@ -42,6 +45,9 @@ void setup() {
   //----------------------Setting up the Serial Communication----------------------
   Serial.begin(115200);
   Wire.begin(SDA, SCL);
+//----------------------Setting up the Servo----------------------
+  servo1.attach(servoPin);
+
   //----------------------Setting up the LoRa----------------------
   LoRa.setPins(LORA_CS, LORA_RST, LORA_DI0);
   if (!LoRa.begin(LORA_BAND)) {
@@ -55,7 +61,7 @@ void setup() {
   //----------------------Setting up the Sensors----------------------
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
-    while (1);
+    //while (1);
   }
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
@@ -67,6 +73,8 @@ void setup() {
 
   }
   Serial.println("BMP280 Initializing OK!");
+  //----------------------Setting up the Servo Pos----------------------
+  servo1.write(0);
 }
 void loop() {
   // Read the Serial2 from the GPS
@@ -119,6 +127,11 @@ void loop() {
     Serial.println(gps.location.lat(),6);
     Serial.println(gps.location.lng(),6);
     Serial.println(gps.altitude.meters());
+    
+    if(bmp.readTemperature() > 40)
+    {
+      servo1.write(90);
+    }
     
 
 

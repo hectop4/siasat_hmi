@@ -27,7 +27,7 @@ void setup() {
   LoRa.setPins(LORA_CS, LORA_RST, LORA_DI0);
   if (!LoRa.begin(LORA_BAND)) {
     Serial.println("LoRa failed to initialize");
-    //while (1);
+    while (1);
   }
 
   Serial.println("LoRa Initializing OK!");
@@ -39,14 +39,17 @@ void setup() {
 
 void loop() {
   // Read the GPS data
+
    boolean newData = false;
-  for (unsigned long start = millis(); millis() - start < 10;)
+  for (unsigned long start = millis(); millis() - start < 100;)
   {
     while (neogps.available())
+      
     {
       if (gps.encode(neogps.read()))
       {
         newData = true;
+        Serial.println("Reading GPS Data");
       }
     }
   }
