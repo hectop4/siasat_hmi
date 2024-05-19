@@ -39,7 +39,9 @@ Servo servo1;
 
 String data = "Hello World";
 
-
+int altura_init;
+int altura;
+bool top=false;
 void setup() {
 
   //----------------------Setting up the Serial Communication----------------------
@@ -75,11 +77,13 @@ void setup() {
   Serial.println("BMP280 Initializing OK!");
   //----------------------Setting up the Servo Pos----------------------
   servo1.write(0);
+  altura_init = bmp.readAltitude();
+
 }
 void loop() {
   // Read the Serial2 from the GPS
    boolean newData = false;
-  for (unsigned long start = millis(); millis() - start < 1000;)
+  for (unsigned long start = millis(); millis() - start < 100;)
   {
     while (neogps.available())
     {
@@ -119,7 +123,7 @@ void loop() {
     Serial.println(" Pa");
 
     Serial.print(F("Approx altitude = "));
-    Serial.print(bmp.readAltitude( )); // this should be adjusted to your local forcase
+    Serial.print(bmp.readAltitude( )-altura_init); // this should be adjusted to your local forcase
     Serial.println(" m");
     //Print GPS data
 
@@ -127,21 +131,26 @@ void loop() {
     Serial.println(gps.location.lat(),6);
     Serial.println(gps.location.lng(),6);
     Serial.println(gps.altitude.meters());
+
+  altura = bmp.readAltitude()-altura_init;
     
-    if(bmp.readTemperature() > 40)
-    {
+    if (altura>4 && top==false){
+      
+      top=true;
+    }
+    if (top==true && altura<2){
       servo1.write(90);
     }
+
     
 
 
-    data="Lat:"+String(gps.location.lat(),6)+", Lon:"+String(gps.location.lng(),6)+", Alt:"+String(gps.altitude.meters())+", Temp"+String(bmp.readTemperature())+" , Press"+String(bmp.readPressure())+", Alt:"+String(bmp.readAltitude())+", Ax:"+String(a.acceleration.x)+", Ay:"+String(a.acceleration.y)+", Az:"+String(a.acceleration.z)+", Gx:"+String(g.gyro.x)+", Gy:"+String(g.gyro.y)+", Gz:"+String(g.gyro.z)+", Temp:"+String(temp.temperature);
+    data="Lat:"+String(gps.location.lat(),6)+", Lon:"+String(gps.location.lng(),6)+", Alt:"+String(gps.altitude.meters())+", Temp"+String(bmp.readTemperature())+" , Press"+String(bmp.readPressure())+", Alt:"+String(bmp.readAltitude()-altura_init)+", Ax:"+String(a.acceleration.x)+", Ay:"+String(a.acceleration.y)+", Az:"+String(a.acceleration.z)+", Gx:"+String(g.gyro.x)+", Gy:"+String(g.gyro.y)+", Gz:"+String(g.gyro.z)+", Temp:"+String(temp.temperature);
 
     Serial.println(data);
     LoRa.beginPacket();
     LoRa.print(data);
     LoRa.endPacket();
-    delay(1000);
     Serial.println("Data Sent");
   }
   
