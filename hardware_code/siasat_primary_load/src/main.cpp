@@ -34,14 +34,102 @@ Adafruit_MPU6050 mpu;
 HardwareSerial neogps(1);
 TinyGPSPlus gps;
 //----------------------Defining Constants for the LoRa----------------------
-
+volatile bool packetReceived = false;
 Servo servo1;
 
-String data = "Hello World";
+String data = "";
+String newMessage = "";
 
 int altura_init;
 int altura;
 bool top=false;
+
+
+void onReceive(int packetSize) {
+  if (packetSize == 0) return;
+  packetReceived = true;
+}
+
+void handlePacket() {
+
+
+ String received = "";
+  while (LoRa.available()) {
+    received += (char)LoRa.read();
+  }
+
+  Serial.print("Received: ");
+  Serial.println(received);
+
+   boolean newData = false;
+  for (unsigned long start = millis(); millis() - start < 100;)
+  {
+    while (neogps.available())
+    {
+      if (gps.encode(neogps.read()))
+      {
+        newData = true;
+      }
+    }
+  }
+
+  //If newData is true
+  if(newData == true)
+  {
+    
+    newData = false;
+    //Print mpu data
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&a, &g, &temp);
+   
+
+  altura = bmp.readAltitude()-altura_init;
+    
+    if (altura>4 && top==false){
+      
+      top=true;
+    }
+    if (top==true && altura<2){
+      servo1.write(90);
+    }
+
+    
+
+
+    data=",PLa:"+String(gps.location.lat(),6)+",PLo:"+String(gps.location.lng(),6)+",T:"+String(bmp.readTemperature())+",P:"+String(bmp.readPressure())+",H:"+String(bmp.readAltitude()-altura_init)+",Ax:"+String(a.acceleration.x)+",Ay:"+String(a.acceleration.y)+",Az:"+String(a.acceleration.z)+",Gx:"+String(g.gyro.x)+",Gy:"+String(g.gyro.y)+",Gz:"+String(g.gyro.z);
+
+  
+  }
+
+
+
+
+
+  newMessage = received + data;
+
+  Serial.print("Sending: ");
+  Serial.println(newMessage);
+
+  LoRa.end(); // Stop LoRa
+  if (!LoRa.begin(437E6)) { // Cambia a la frecuencia para repetidor-receptor
+    Serial.println("Starting LoRa failed!");
+    while (1);
+  }
+
+  LoRa.beginPacket();
+  LoRa.print(newMessage);
+  LoRa.endPacket();
+
+  LoRa.end(); // Stop LoRa
+  if (!LoRa.begin(433E6)) { // Regresa a la frecuencia para recibir
+    Serial.println("Starting LoRa failed!");
+    while (1);
+  }
+  LoRa.receive();
+}
+
+
+
 void setup() {
 
   //----------------------Setting up the Serial Communication----------------------
@@ -79,81 +167,23 @@ void setup() {
   servo1.write(0);
   altura_init = bmp.readAltitude();
 
+    LoRa.onReceive(onReceive);
+  LoRa.receive();
+
 }
 void loop() {
-  // Read the Serial2 from the GPS
-   boolean newData = false;
-  for (unsigned long start = millis(); millis() - start < 100;)
-  {
-    while (neogps.available())
-    {
-      if (gps.encode(neogps.read()))
-      {
-        newData = true;
-      }
-    }
+  
+  if (packetReceived) {
+    packetReceived = false;
+    handlePacket();
   }
 
-  //If newData is true
-  if(newData == true)
-  {
-    
-    newData = false;
-    //Print mpu data
-    sensors_event_t a, g, temp;
-    mpu.getEvent(&a, &g, &temp);
-    Serial.print("Acceleration X: "); Serial.print(a.acceleration.x); Serial.print(" m/s^2");
-    Serial.print("\tY: "); Serial.print(a.acceleration.y); Serial.print(" m/s^2");
-    Serial.print("\tZ: "); Serial.print(a.acceleration.z); Serial.println(" m/s^2");
-
-    Serial.print("Rotation X: "); Serial.print(g.gyro.x); Serial.print(" rad/s");
-    Serial.print("\tY: "); Serial.print(g.gyro.y); Serial.print(" rad/s");
-    Serial.print("\tZ: "); Serial.print(g.gyro.z); Serial.println(" rad/s");
-
-    Serial.print("Temperature: ");
-    Serial.print(temp.temperature);
-    Serial.println(" degC");
-  //Print bmp data
-    Serial.print(F("Temperature = "));
-    Serial.print(bmp.readTemperature());
-    Serial.println(" *C");
-
-    Serial.print(F("Pressure = "));
-    Serial.print(bmp.readPressure());
-    Serial.println(" Pa");
-
-    Serial.print(F("Approx altitude = "));
-    Serial.print(bmp.readAltitude( )-altura_init); // this should be adjusted to your local forcase
-    Serial.println(" m");
-    //Print GPS data
-
-    Serial.println(gps.satellites.value());
-    Serial.println(gps.location.lat(),6);
-    Serial.println(gps.location.lng(),6);
-    Serial.println(gps.altitude.meters());
-
-  altura = bmp.readAltitude()-altura_init;
-    
-    if (altura>4 && top==false){
-      
-      top=true;
-    }
-    if (top==true && altura<2){
-      servo1.write(90);
-    }
-
-    
 
 
-    data="Lat:"+String(gps.location.lat(),6)+", Lon:"+String(gps.location.lng(),6)+", Alt:"+String(gps.altitude.meters())+", Temp"+String(bmp.readTemperature())+" , Press"+String(bmp.readPressure())+", Alt:"+String(bmp.readAltitude()-altura_init)+", Ax:"+String(a.acceleration.x)+", Ay:"+String(a.acceleration.y)+", Az:"+String(a.acceleration.z)+", Gx:"+String(g.gyro.x)+", Gy:"+String(g.gyro.y)+", Gz:"+String(g.gyro.z)+", Temp:"+String(temp.temperature);
-
-    Serial.println(data);
-    LoRa.beginPacket();
-    LoRa.print(data);
-    LoRa.endPacket();
-    Serial.println("Data Sent");
-  }
+  // Agregar un pequeño delay para permitir otras operaciones
+  delay(10);
   
 }
+
 
 //----------------------End of the Code----------------------

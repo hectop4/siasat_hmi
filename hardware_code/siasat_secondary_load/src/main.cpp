@@ -62,7 +62,7 @@ void loop() {
     Serial.println(gps.location.lng(),6);
     Serial.println(gps.altitude.meters());
 
-  data = "Siasat Secondary Load: " + String(gps.satellites.value()) + " " + String(gps.location.lat(),6) + " " + String(gps.location.lng(),6) + " " + String(gps.altitude.meters());
+  data = "SLa:" + String(gps.location.lat(),6) + "," +"SLo:" + String(gps.location.lng(),6); 
     Serial.println(data);
     LoRa.beginPacket();
     LoRa.print(data);
