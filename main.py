@@ -8,8 +8,27 @@ from PyQt5.QtSerialPort import QSerialPort,QSerialPortInfo
 from PyQt5 import QtCore,QtWidgets
 import pyqtgraph as pg
 import numpy as np
+from numpy import sin, cos, arccos, pi, round
+import math
+import pandas as pd
+import csv
+# Initialize the CSV file with headers
 
+# Rest of the code...
 
+def distancia_esferica(R, theta1, theta2, phi1, phi2):
+    # Convertir grados a radianes
+    theta1 = math.radians(theta1)
+    theta2 = math.radians(theta2)
+    phi1 = math.radians(phi1)
+    phi2 = math.radians(phi2)
+    
+    # Calcular la distancia esférica
+    d = 2 * R * math.asin(math.sqrt(math.sin((theta2 - theta1) / 2)**2 + 
+                                    math.cos(theta1) * math.cos(theta2) * math.sin((phi2 - phi1) / 2)**2))
+    return d
+
+R = 6371  # Radio de la Tierra en kilómetros
 #Colors
 PRIMARY_COLOR = "#0F0F0F"
 SECONDARY_COLOR = "#232D3F"
@@ -20,6 +39,39 @@ GRAPH_2 = "#6528F7"
 GRAPH_3 = "#D7BBF5"
 GRAPH_4 = "#F9DBBB"
 csv_file = "data.csv"
+
+with open(csv_file, 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['Acc z', 'Acc x', 'Acc y', 'Gyro z', 'Gyro x','Gyro y', 'Pres', 'Temp', 'PLo', 'PLa',  'SLat', 'SLon','Height', 'Speed',])
+
+def rad2deg(radians):
+    degrees = radians * 180 / pi
+    return degrees
+
+def deg2rad(degrees):
+    radians = degrees * pi / 180
+    return radians
+
+
+
+
+
+def getDistanceBetweenPointsNew(latitude1, longitude1, latitude2, longitude2, unit = 'meters'):
+    
+    theta = longitude1 - longitude2
+    
+    distance = 60 * 1.1515 * rad2deg(
+        arccos(
+            (sin(deg2rad(latitude1)) * sin(deg2rad(latitude2))) + 
+            (cos(deg2rad(latitude1)) * cos(deg2rad(latitude2)) * cos(deg2rad(theta)))
+        )
+    )
+    
+    if unit == 'miles':
+        return round(distance, 2)
+    if unit == 'meters':
+        return round(distance * 1.609344, 2)*1000
+
 
 # Create the main application
 class App(QMainWindow):
@@ -98,7 +150,7 @@ class App(QMainWindow):
         self.plt_accelerometer.setXRange(0,100)
         self.plt_accelerometer.showGrid(x=False,y=True)
         self.plt_accelerometer.setMouseEnabled(x=False,y=True)
-        self.plt_accelerometer.setLabel('left', "Acceleration", units='g')
+        self.plt_accelerometer.setLabel('left', "Acceleration", units='m/s^2')
         self.plt_accelerometer.setLabel('bottom', "Time", units='s')
         self.plt_accelerometer.addLegend()
         #// self.plt_accelerometer.plot(self.x,self.y,pen=pg.mkPen(color=GRAPH_1,width=2),name="Acceleration X")
@@ -132,10 +184,10 @@ class App(QMainWindow):
 #%plot temperature
         self.plt_temperature=pg.PlotWidget(title="Temperature")
         self.temperature.addWidget(self.plt_temperature)
-        self.plt_temperature.setYRange(-10,50)
+        self.plt_temperature.setYRange(200,350)
         self.plt_temperature.setXRange(0,100)
         self.plt_temperature.showGrid(x=False,y=True)
-        self.plt_temperature.setLabel('left', "Temperature", units='°C')
+        self.plt_temperature.setLabel('left', "Temperature", units='K')
         self.plt_temperature.setLabel('bottom', "Time", units='s')
         self.plt_temperature.setMouseEnabled(x=False,y=True)
         self.plt_temperature.addLegend()
@@ -177,18 +229,19 @@ class App(QMainWindow):
     
     def read_serial(self):
         # self.x=list(np.linspace(0,100,100))
-        # self.y=list(np.linspace(0,0,100))
+
         if not self.serial.canReadLine(): return
         rx=self.serial.readLine()
         x=str(rx,"utf-8")
         data_dict = split_data(x)
         print(data_dict)
-        
+
+
         try:
             self.azy=self.azy[1:]
-            self.azy.append(float(data_dict['AZ']))
+            self.azy.append(float(data_dict['Az']))
             self.ayy=self.ayy[1:]
-            self.ayy.append(float(data_dict['AY']))
+            self.ayy.append(float(data_dict['Ay']))
             self.axy=self.axy[1:]
             self.axy.append(float(data_dict['Ax']))
             self.plt_accelerometer.clear()
@@ -198,11 +251,11 @@ class App(QMainWindow):
         
             #Grafico de giroscopio
             self.gzy=self.gzy[1:]
-            self.gzy.append(float(data_dict['GZ']))
+            self.gzy.append(float(data_dict['Gz']))
             self.gyy=self.gyy[1:]
-            self.gyy.append(float(data_dict['GY']))
+            self.gyy.append(float(data_dict['Gy']))
             self.gxy=self.gxy[1:]
-            self.gxy.append(float(data_dict['GX']))
+            self.gxy.append(float(data_dict['Gx']))
             self.plt_giroscope.clear()
             self.plt_giroscope.plot(self.x,self.gyy,pen=pg.mkPen(color=GRAPH_2,width=2),name="Angle Y")
             self.plt_giroscope.plot(self.x,self.gzy,pen=pg.mkPen(color=GRAPH_1,width=2),name="Angle Z")
@@ -210,7 +263,7 @@ class App(QMainWindow):
 
             #Grafico temperatura
             self.t=self.t[1:]
-            self.t.append(float(data_dict['T']))
+            self.t.append(float(data_dict['T'])+273.15)
             self.plt_temperature.clear()
             self.plt_temperature.plot(self.x,self.t,pen=pg.mkPen(color=GRAPH_3,width=2),name="Temperature")
 
@@ -221,11 +274,17 @@ class App(QMainWindow):
             self.plt_pression.plot(self.x,self.p,pen=pg.mkPen(color=GRAPH_2,width=2),name="Pression")
             #Grafico altura
             self.h=self.h[1:]
-            self.h.append(float(data_dict['A'].split('\r')[0]))
+            self.h.append(float(data_dict['H']))
             self.plt_height.clear()
             self.plt_height.plot(self.x,self.h,pen=pg.mkPen(color=GRAPH_1,width=2),name="Height")
+            #Grafico velocidad
+            self.s=self.s[1:]
+            self.s.append(float(data_dict['V'].replace("\r\n","")))
+            self.plt_speed.clear()
+            self.plt_speed.plot(self.x,self.s,pen=pg.mkPen(color=GRAPH_4,width=2),name="Speed")
             
-
+            
+            
             
         except Exception:
             self.x=list(np.linspace(0,100,100))
@@ -238,8 +297,41 @@ class App(QMainWindow):
             self.t=list(np.linspace(0,0,100))
             self.p=list(np.linspace(0,0,100))
             self.h=list(np.linspace(0,0,100))
-            print("Error")
+            self.s=list(np.linspace(0,0,100))
+            print(Exception)
+        try:
+            y0=float(data_dict['SLa'])
+            x0=float(data_dict['SLo'])
+            y1=float(data_dict['PLa'])
+            x1=float(data_dict['PLo'])
+            distance=distancia_esferica(R, y0, y1, x0, x1)
+            print('---------------------------------------------------------')
+            print(distance*1609*0.7)
+        except Exception:
+            print(Exception)
 
+        #* Guardar datos en nueva fila del archivo csv
+        with open(csv_file, mode='a') as file:
+            writer = csv.writer(file)
+            writer.writerow([data_dict['Az'], data_dict['Ax'], data_dict['Ay'], data_dict['Gz'], data_dict['Gx'], data_dict['Gy'], data_dict['P'], data_dict['T'], data_dict['PLo'], data_dict['PLa'], data_dict['SLo'], data_dict['SLa'], data_dict['H'], data_dict['V']])
+        
+    #
+
+
+        
+        
+        
+        
+
+        
+		
+            
+            
+			
+        
+			
+		
+            
 
 #*Funciones para cerrar la ventana en Linux y windows:
 #*Para el caso de windows se cierra el programa con ctrl+q
@@ -256,9 +348,8 @@ def split_data(date):
     for data in date.split(","):
         try:
             splited[data.split(":")[0]]=data.split(":")[1]
-            file=open(csv_file,"a")
-            file.write(data)  
-            file.close()
+            
+            
 
         except IndexError:
             pass

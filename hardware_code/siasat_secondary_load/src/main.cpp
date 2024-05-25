@@ -12,7 +12,7 @@
 #define LORA_MOSI 23
 #define LORA_RST 14
 #define LORA_DI0 2
-#define LORA_BAND 433E6
+#define LORA_BAND 410E6
 #define GPS_RX 16
 #define GPS_TX 17
 HardwareSerial neogps(1);
@@ -49,7 +49,7 @@ void loop() {
       if (gps.encode(neogps.read()))
       {
         newData = true;
-        Serial.println("Reading GPS Data");
+
       }
     }
   }
@@ -57,10 +57,7 @@ void loop() {
   {
 
     newData = false;
-    Serial.println(gps.satellites.value());
-    Serial.println(gps.location.lat(),6);
-    Serial.println(gps.location.lng(),6);
-    Serial.println(gps.altitude.meters());
+
 
   data = "SLa:" + String(gps.location.lat(),6) + "," +"SLo:" + String(gps.location.lng(),6); 
     Serial.println(data);
