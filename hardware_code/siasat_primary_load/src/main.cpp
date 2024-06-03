@@ -2,7 +2,6 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <LoRa.h>
-#include <Adafruit_BMP280.h>
 #include <Adafruit_BMP085.h>
 #include <Adafruit_MPU6050.h>
 #include <TinyGPS++.h>
@@ -21,7 +20,7 @@
 #define LORA_MOSI 23
 #define LORA_RST 14
 #define LORA_DI0 2
-#define LORA_BAND 433E6
+#define LORA_BAND 434E6
 
 #define servoPin 4
 //----------------------Defining Constants for the Sensors----------------------
@@ -41,7 +40,13 @@ String data = "";
 String newMessage = "";
 
 int altura_init;
-int altura;
+float altura;
+
+float dt=0.1;
+
+float d0=0;
+float d1=0;
+
 bool top=false;
 
 
@@ -84,19 +89,28 @@ void handlePacket() {
    
 
   altura = bmp.readAltitude()-altura_init;
+
+  //Calculo de velocidad
+
     
-    if (altura>4 && top==false){
+    if (altura>360 && top==false){
       
       top=true;
     }
-    if (top==true && altura<2){
+    if (top==true && altura<210){
       servo1.write(90);
     }
+
+    //calculo de velocidad 
+    d1=altura;
+    float v=(d1-d0)/dt;
+    d0=d1;
+
 
     
 
 
-    data=",PLa:"+String(gps.location.lat(),6)+",PLo:"+String(gps.location.lng(),6)+",T:"+String(bmp.readTemperature())+",P:"+String(bmp.readPressure())+",H:"+String(bmp.readAltitude()-altura_init)+",Ax:"+String(a.acceleration.x)+",Ay:"+String(a.acceleration.y)+",Az:"+String(a.acceleration.z)+",Gx:"+String(g.gyro.x)+",Gy:"+String(g.gyro.y)+",Gz:"+String(g.gyro.z);
+    data=",PLa:"+String(gps.location.lat(),6)+",PLo:"+String(gps.location.lng(),6)+",T:"+String(bmp.readTemperature())+",P:"+String(bmp.readPressure())+",H:"+String(bmp.readAltitude()-altura_init)+",Ax:"+String(a.acceleration.x)+",Ay:"+String(a.acceleration.y)+",Az:"+String(a.acceleration.z)+",Gx:"+String(g.gyro.x)+",Gy:"+String(g.gyro.y)+",Gz:"+String(g.gyro.z)+",V:"+String(v);
 
   
   }
@@ -111,7 +125,7 @@ void handlePacket() {
   Serial.println(newMessage);
 
   LoRa.end(); // Stop LoRa
-  if (!LoRa.begin(437E6)) { // Cambia a la frecuencia para repetidor-receptor
+  if (!LoRa.begin(410E6)) { // Cambia a la frecuencia para repetidor-receptor
     Serial.println("Starting LoRa failed!");
     while (1);
   }
@@ -121,7 +135,7 @@ void handlePacket() {
   LoRa.endPacket();
 
   LoRa.end(); // Stop LoRa
-  if (!LoRa.begin(433E6)) { // Regresa a la frecuencia para recibir
+  if (!LoRa.begin(434E6)) { // Regresa a la frecuencia para recibir
     Serial.println("Starting LoRa failed!");
     while (1);
   }
@@ -134,7 +148,13 @@ void setup() {
 
   //----------------------Setting up the Serial Communication----------------------
   Serial.begin(115200);
+
+  //----------------------Setting up the I2C Communication----------------------
   Wire.begin(SDA, SCL);
+
+
+  
+
 //----------------------Setting up the Servo----------------------
   servo1.attach(servoPin);
 
@@ -149,23 +169,31 @@ void setup() {
   //----------------------Setting up the GPS----------------------
   neogps.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);
   //----------------------Setting up the Sensors----------------------
+  if (!bmp.begin()) {
+    Serial.println("Could not find a valid BMP280 sensor, check wiring!");
+    while (1);
+
+  }
+  Serial.println("BMP280 Initializing OK!");
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
-    //while (1);
+    while (1);
   }
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
   Serial.println("MPU6050 Initializing OK!");
   
-  if (!bmp.begin()) {
-    Serial.println("Could not find a valid BMP280 sensor, check wiring!");
-
-  }
-  Serial.println("BMP280 Initializing OK!");
   //----------------------Setting up the Servo Pos----------------------
   servo1.write(0);
   altura_init = bmp.readAltitude();
+  Serial.println("Hello World");
+  Serial.println("Altura Inicial: "+String(altura_init));
+
+  //Valores del MPU6050 leidos
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+  Serial.println("Ax:" + String(a.acceleration.x) + "," + "Ay:" + String(a.acceleration.y) + "," + "Az:" + String(a.acceleration.z) + "," + "Gx:" + String(g.gyro.x) + "," + "Gy:" + String(g.gyro.y) + "," + "Gz:" + String(g.gyro.z));
 
     LoRa.onReceive(onReceive);
   LoRa.receive();

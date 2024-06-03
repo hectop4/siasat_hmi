@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <LoRa.h>
+#include "string.h"
 
 #define LORA_SCK 18
 #define LORA_CS 5
@@ -7,7 +8,7 @@
 #define LORA_MOSI 23
 #define LORA_RST 14
 #define LORA_DI0 2
-#define LORA_BAND 433E6
+#define LORA_BAND 410E6
 
 
 
@@ -33,16 +34,14 @@ void loop() {
   int packetSize = LoRa.parsePacket();
   if (packetSize) {
     // received a packet
-    Serial.print("Received packet '");
-
+  String receive;
     // read packet
     while (LoRa.available()) {
-      Serial.print((char)LoRa.read());
-    }
 
-    // print RSSI of packet
-    Serial.print("' with RSSI ");
-    Serial.println(LoRa.packetRssi());
+      receive += (char)LoRa.read();
+    }
+    Serial.println(receive);
+
   }
 }
 
